@@ -22,21 +22,30 @@ package main
 
 import (
 	"fmt"
-	"github.com/kr/s3/s3util"
+	"s3/s3util"
 	"io"
 	"os"
 	"strings"
+  "flag"
 )
 
 func main() {
-	s3util.DefaultConfig.AccessKey = os.Getenv("S3_ACCESS_KEY")
-	s3util.DefaultConfig.SecretKey = os.Getenv("S3_SECRET_KEY")
-	args := os.Args[1:]
-	if len(args) != 2 {
-		fmt.Fprintln(os.Stderr, "Usage: s3cp file url")
-		fmt.Fprintln(os.Stderr, "       s3cp url file")
-		os.Exit(1)
-	}
+  preSigned := flag.Bool("pre-signed", false, "Use a pre-signed S3 URL instead of S3 credentials.")
+  flag.Parse()
+
+  s3util.DefaultConfig.Opts.PreSigned = *preSigned
+	args := flag.Args()
+
+  if !*preSigned {
+    if len(args) != 2 {
+      fmt.Fprintln(os.Stderr, "usage: s3cp file url")
+      fmt.Fprintln(os.Stderr, "       s3cp url file")
+      os.Exit(1)
+    } else {
+      s3util.DefaultConfig.AccessKey = os.Getenv("S3_ACCESS_KEY")
+      s3util.DefaultConfig.SecretKey = os.Getenv("S3_SECRET_KEY")
+    }
+  }
 
 	r, err := open(args[0])
 	if err != nil {

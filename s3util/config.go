@@ -11,17 +11,20 @@ package s3util
 // TODO(kr): parse error responses; return structured data
 
 import (
-	"github.com/kr/s3"
+	"s3"
 	"net/http"
 )
 
 var DefaultConfig = &Config{
 	Service: s3.DefaultService,
 	Keys:    new(s3.Keys),
+  Client:  http.DefaultClient,
+  Opts:    new(s3.Opts),
 }
 
 type Config struct {
 	*s3.Service
 	*s3.Keys
 	*http.Client // if nil, uses http.DefaultClient
+  *s3.Opts
 }

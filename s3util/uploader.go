@@ -3,7 +3,7 @@ package s3util
 import (
 	"bytes"
 	"encoding/xml"
-	"github.com/kr/s3"
+	"s3"
 	"io"
 	"net/http"
 	"net/url"
@@ -73,27 +73,35 @@ func Create(url string, h http.Header, c *Config) (io.WriteCloser, error) {
 // See http://docs.amazonwebservices.com/AmazonS3/latest/dev/mpuoverview.html.
 // This initial request returns an UploadId that we use to identify
 // subsequent PUT requests.
-func newUploader(url string, h http.Header, c *Config) (u *uploader, err error) {
+func newUploader(s3url string, h http.Header, c *Config) (u *uploader, err error) {
 	u = new(uploader)
 	u.s3 = *c.Service
-	u.url = url
+	u.url = s3url
 	u.keys = *c.Keys
 	u.client = c.Client
 	if u.client == nil {
 		u.client = http.DefaultClient
 	}
 	u.bufsz = minPartSize
-	r, err := http.NewRequest("POST", url+"?uploads", nil)
+	r, err := http.NewRequest("POST", s3url, nil)
 	if err != nil {
 		return nil, err
 	}
-	r.Header.Set("Date", time.Now().UTC().Format(http.TimeFormat))
-	for k := range h {
-		for _, v := range h[k] {
-			r.Header.Add(k, v)
-		}
-	}
-	u.s3.Sign(r, u.keys)
+  if !c.Opts.PreSigned {
+    r.Header.Set("Date", time.Now().UTC().Format(http.TimeFormat))
+    for k := range h {
+      for _, v := range h[k] {
+        r.Header.Add(k, v)
+      }
+    }
+    u.s3.Sign(r, u.keys)
+  } else {
+    parsedUrl, _ := url.Parse(s3url)
+    parsedQuery, _ := url.ParseQuery(parsedUrl.RawQuery)
+    r.URL.RawQuery = "uploads&AWSAccessKeyId=" + parsedQuery["AWSAccessKeyId"][0] +
+                     "&Signature=" + parsedQuery["Signature"][0] +
+                     "&Expires=" + parsedQuery["Expires"][0]
+  }
 	resp, err := u.client.Do(r)
 	if err != nil {
 		return nil, err

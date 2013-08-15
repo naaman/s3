@@ -51,6 +51,10 @@ type Keys struct {
 	// See http://docs.aws.amazon.com/AmazonS3/latest/dev/MakingRequests.html#TypesofSecurityCredentials
 }
 
+type Opts struct {
+  PreSigned bool
+}
+
 // IdentityBucket returns subdomain.
 // It is designed to be used with S3-compatible services that
 // treat the entire subdomain as the bucket name, for example
